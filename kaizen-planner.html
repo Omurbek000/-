@@ -1,0 +1,2180 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Кайдзен Планировщик</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+:root{
+  --bg:#ffffff;--surface:#ffffff;--surface2:#f7f7f5;--surface3:#f0f0ee;--border:#e4e4e3;
+  --text:#37352f;--text2:#9b9a97;--accent:#2eaadc;--accent2:#2496c4;
+  --green:#0f7b6c;--red:#e03e3e;--orange:#d9730d;--yellow:#dfab01;--purple:#6940a5;
+  --blue:#2eaadc;--pink:#d44c7e;
+  --shadow:0 1px 3px rgba(0,0,0,0.08);--shadow-md:0 4px 12px rgba(0,0,0,0.1);
+}
+body{font-family:'Inter',system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;display:flex;font-size:14px;line-height:1.5}
+/* Sidebar */
+.sidebar{width:220px;background:var(--surface2);border-right:1px solid var(--border);display:flex;flex-direction:column;flex-shrink:0;height:100vh;position:fixed;left:0;top:0;z-index:50;transition:width .2s ease}
+.sidebar.collapsed{width:56px}
+.sidebar.collapsed .sidebar-label,.sidebar.collapsed .sidebar-title span,.sidebar.collapsed .sidebar-section-title{display:none}
+.sidebar.collapsed .sidebar-item{justify-content:center;padding:8px 0}
+.sidebar.collapsed .sidebar-item span:not(.sidebar-icon){display:none}
+.sidebar-header{padding:12px 14px;display:flex;align-items:center;gap:8px;border-bottom:1px solid var(--border)}
+.sidebar-header .sidebar-logo{font-size:18px}
+.sidebar-title{font-size:14px;font-weight:600;color:var(--text);flex:1;white-space:nowrap;overflow:hidden}
+.sidebar-title span{margin-left:4px}
+.sidebar-toggle{background:none;border:none;color:var(--text2);cursor:pointer;padding:4px;border-radius:4px;font-size:14px}
+.sidebar-toggle:hover{background:var(--surface3);color:var(--text)}
+.sidebar-nav{flex:1;padding:8px 6px;overflow-y:auto}
+.sidebar-section-title{font-size:10px;font-weight:600;color:var(--text2);text-transform:uppercase;letter-spacing:.5px;padding:8px 8px 4px;margin-top:4px}
+.sidebar-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:6px;cursor:pointer;font-size:13px;color:var(--text2);transition:all .12s ease;text-decoration:none;border:none;background:none;width:100%;text-align:left;font-family:inherit}
+.sidebar-item:hover{background:var(--surface3);color:var(--text)}
+.sidebar-item.active{background:var(--surface3);color:var(--text);font-weight:500}
+.sidebar-icon{font-size:16px;width:20px;text-align:center;flex-shrink:0}
+.sidebar-label{flex:1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.sidebar-divider{height:1px;background:var(--border);margin:6px 8px}
+.sidebar-footer{padding:8px;border-top:1px solid var(--border)}
+/* Main */
+.main{flex:1;margin-left:220px;display:flex;flex-direction:column;min-height:100vh;transition:margin-left .2s ease}
+.sidebar.collapsed ~ .main{margin-left:56px}
+.topbar{background:var(--surface);border-bottom:1px solid var(--border);padding:8px 16px;display:flex;align-items:center;gap:10px;flex-shrink:0;position:sticky;top:0;z-index:40}
+.topbar h1{font-size:15px;font-weight:600;color:var(--text);flex:1}
+.topbar .subtitle{font-size:11px;color:var(--text2)}
+.tab{display:none;flex:1;overflow:auto;padding:16px 24px}
+.tab.active{display:flex;flex-direction:column}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:10px 12px;margin-bottom:6px;cursor:grab;transition:all .15s ease;box-shadow:var(--shadow)}
+.card:hover{box-shadow:var(--shadow-md);transform:translateY(-1px)}
+.card.dragging{opacity:.5}
+.card .text{font-size:14px;line-height:1.4}
+.card .meta{display:flex;gap:4px;margin-top:6px;flex-wrap:wrap}
+.tag{font-size:11px;padding:2px 8px;border-radius:4px;font-weight:500}
+.tag-want{background:#e6f7f2;color:var(--green)}
+.tag-should{background:#fde8e8;color:var(--red)}
+.tag-happy{background:#e8f4fd;color:var(--accent)}
+.tag-society{background:#fef3e2;color:var(--orange)}
+.tag-nature{background:#e6f7f2;color:var(--green)}
+.tag-dev{background:#fef9e7;color:var(--yellow)}
+.tag-family{background:#f3eefa;color:var(--purple)}
+.tag-biz{background:#e8f4fd;color:var(--blue)}
+.tag-community{background:#fde8f0;color:var(--pink)}
+.tag-hobby{background:#fef3e2;color:var(--orange)}
+input,textarea{background:var(--surface);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:6px;font-size:14px;width:100%;outline:none;transition:border .15s ease;font-family:inherit}
+input:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(46,170,220,0.15)}
+textarea{resize:vertical;min-height:60px}
+button{cursor:pointer;font-family:inherit}
+.btn{background:var(--accent);color:#fff;border:none;padding:8px 16px;border-radius:6px;font-size:13px;font-weight:500;transition:all .15s ease}
+.btn:hover{background:var(--accent2);box-shadow:var(--shadow)}
+.btn:active{transform:scale(0.98)}
+.btn-sm{padding:6px 12px;font-size:12px}
+.btn-outline{background:transparent;border:1px solid var(--border);color:var(--text2)}
+.btn-outline:hover{border-color:var(--accent);color:var(--accent);background:rgba(46,170,220,0.05)}
+.btn-danger{background:var(--red)}
+.btn-danger:hover{background:#c73636}
+.add-row{display:flex;gap:8px;margin-bottom:12px}
+.add-row input{flex:1}
+.section-title{font-size:18px;font-weight:600;margin-bottom:8px;color:var(--text)}
+.section-desc{font-size:13px;color:var(--text2);margin-bottom:12px;line-height:1.5}
+.counter{font-size:12px;color:var(--text2);margin-bottom:8px}
+.empty{text-align:center;padding:32px 16px;color:var(--text2)}
+.empty .icon{font-size:40px;margin-bottom:10px;opacity:.5}
+.empty p{font-size:14px}
+
+/* Brain dump */
+#brain-dump .dump-input{margin-bottom:12px}
+#brain-dump .dump-input textarea{min-height:80px}
+#brain-dump .dump-actions{display:flex;gap:8px;margin-top:8px}
+#brain-dump .brain-cards{flex:1;overflow:auto}
+
+/* Filters */
+.filter-step{margin-bottom:16px;padding:14px;background:var(--surface);border-radius:8px;box-shadow:var(--shadow);border:1px solid var(--border)}
+.filter-step h3{font-size:14px;font-weight:600;margin-bottom:10px;display:flex;align-items:center;gap:8px}
+.filter-step h3 .step-num{background:var(--accent);color:#fff;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;flex-shrink:0}
+.dual-col{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.dual-col .col{min-height:90px;padding:10px;border-radius:8px;border:2px dashed var(--border);transition:all .15s ease}
+.dual-col .col.drag-over{border-color:var(--accent);background:rgba(46,170,220,0.05)}
+.dual-col .col h4{font-size:13px;font-weight:600;margin-bottom:8px;color:var(--text2)}
+.mission-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px}
+.mission-col{padding:10px;border-radius:8px;border:2px dashed var(--border);min-height:70px;transition:all .15s ease}
+.mission-col h4{font-size:13px;font-weight:600;margin-bottom:6px}
+.mission-col.yes{border-color:var(--green)}
+.mission-col.no{border-color:var(--red)}
+.dir-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:8px}
+.dir-col{padding:10px;border-radius:8px;border:2px dashed var(--border);min-height:70px;text-align:center;transition:all .15s ease}
+.dir-col h4{font-size:11px;font-weight:600;margin-bottom:4px}
+.dir-col .dir-icon{font-size:18px;margin-bottom:4px}
+.dir-col[data-dir="dev"]{border-color:var(--yellow)}
+.dir-col[data-dir="family"]{border-color:var(--purple)}
+.dir-col[data-dir="biz"]{border-color:var(--blue)}
+.dir-col[data-dir="community"]{border-color:var(--pink)}
+.dir-col[data-dir="hobby"]{border-color:var(--orange)}
+.trash-col{margin-top:10px;padding:10px;border-radius:8px;border:2px dashed var(--red);min-height:50px}
+.trash-col h4{font-size:13px;font-weight:600;margin-bottom:4px;color:var(--red)}
+
+/* Kanban */
+.kanban-header{display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.kanban-header select{background:var(--surface);border:1px solid var(--border);color:var(--text);padding:6px 12px;border-radius:6px;font-size:13px}
+.kanban-board{display:flex;gap:10px;flex:1;overflow-x:auto;padding-bottom:10px}
+.kanban-col{min-width:220px;max-width:280px;flex:1;background:var(--surface2);border-radius:10px;border:1px solid var(--border);display:flex;flex-direction:column}
+.kanban-col.drag-over{border-color:var(--accent);background:rgba(46,170,220,0.05)}
+.kanban-col-header{padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px;font-weight:600;display:flex;justify-content:space-between;align-items:center}
+.kanban-col-header .count{background:var(--surface3);padding:2px 8px;border-radius:10px;font-size:11px;color:var(--text2)}
+.kanban-col-body{flex:1;padding:8px;overflow-y:auto;min-height:90px;display:flex;flex-direction:column;gap:6px}
+.kanban-card{background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:8px 10px;font-size:13px;cursor:grab;transition:all .15s ease;box-shadow:var(--shadow)}
+.kanban-card:hover{box-shadow:var(--shadow-md);transform:translateY(-1px)}
+.kanban-card .card-color{width:100%;height:3px;border-radius:2px;margin-bottom:6px}
+.kanban-card .card-actions{display:none;margin-top:6px;gap:4px}
+.kanban-card:hover .card-actions{display:flex}
+.kanban-card .card-actions button{font-size:10px;padding:3px 6px;border-radius:4px}
+
+/* Habits */
+.habits-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;flex-wrap:wrap;gap:8px}
+.habit-add{display:flex;gap:8px;margin-bottom:12px}
+.habit-add input{flex:1}
+.habit-list{display:flex;flex-direction:column;gap:6px;margin-bottom:20px}
+.habit-item{display:flex;align-items:center;gap:10px;padding:8px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;box-shadow:var(--shadow)}
+.habit-item .habit-name{flex:1;font-size:13px}
+.habit-item .habit-actions{display:flex;gap:4px}
+.habit-item .habit-actions button{width:28px;height:28px;border-radius:6px;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-size:13px;display:flex;align-items:center;justify-content:center;transition:all .15s ease}
+.habit-item .habit-actions button.yes{background:#e6f7f2;color:var(--green);border-color:var(--green)}
+.habit-item .habit-actions button.no{background:#fde8e8;color:var(--red);border-color:var(--red)}
+.habit-item .habit-streak{font-size:11px;color:var(--text2);min-width:60px;text-align:right}
+.chart-container{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;margin-bottom:12px;box-shadow:var(--shadow)}
+.chart-container h3{font-size:14px;font-weight:600;margin-bottom:10px}
+.chart{display:flex;align-items:flex-end;gap:4px;height:90px;padding:0 4px}
+.chart .bar-group{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px}
+.chart .bar{width:100%;border-radius:3px 3px 0 0;transition:height .3s ease}
+.chart .bar.yes{background:var(--green)}
+.chart .bar.no{background:var(--red)}
+.chart .bar.empty{background:var(--surface3)}
+.chart .bar-label{font-size:10px;color:var(--text2);white-space:nowrap}
+.habit-stats{display:grid;grid-template-columns:repeat(3,1fr);gap:10px}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;text-align:center;box-shadow:var(--shadow)}
+.stat-card .stat-value{font-size:20px;font-weight:700;color:var(--accent)}
+.stat-card .stat-label{font-size:11px;color:var(--text2);margin-top:4px}
+
+/* Today */
+.today-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.today-summary{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:12px}
+.today-list{flex:1;overflow:auto}
+.today-card{display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:6px;transition:all .15s ease;box-shadow:var(--shadow)}
+.today-card.done{opacity:.5;text-decoration:line-through}
+.today-card .check{width:22px;height:22px;border-radius:50%;border:2px solid var(--border);cursor:pointer;display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:all .2s ease;font-size:12px}
+.today-card .check:hover{border-color:var(--green)}
+.today-card .check.checked{background:var(--green);border-color:var(--green);color:#fff}
+.today-card .today-text{flex:1;font-size:14px}
+.today-card .today-cat{font-size:11px;padding:2px 8px;border-radius:4px}
+.today-card .today-move{opacity:0;transition:opacity .2s ease}
+.today-card:hover .today-move{opacity:1}
+.progress-bar{height:6px;background:var(--surface2);border-radius:3px;margin-bottom:12px;overflow:hidden}
+.progress-bar .fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--green));border-radius:3px;transition:width .3s ease}
+
+/* Responsive */
+@media(max-width:1024px){
+  .sidebar{width:56px}
+  .sidebar .sidebar-label,.sidebar .sidebar-title span,.sidebar .sidebar-section-title{display:none}
+  .sidebar .sidebar-item{justify-content:center;padding:8px 0}
+  .main{margin-left:56px}
+}
+@media(max-width:768px){
+  .sidebar{transform:translateX(-100%);position:absolute}
+  .sidebar.mobile-open{transform:translateX(0);box-shadow:var(--shadow-md)}
+  .main{margin-left:0}
+  .dual-col{grid-template-columns:1fr}
+  .mission-grid{grid-template-columns:1fr}
+  .dir-grid{grid-template-columns:repeat(2,1fr)}
+  .kanban-col{min-width:200px}
+  .today-summary{grid-template-columns:1fr}
+  .habit-stats{grid-template-columns:1fr}
+  .tab{padding:12px 16px}
+}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--text2)}
+
+/* Modal */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.4);backdrop-filter:blur(4px);display:none;align-items:center;justify-content:center;z-index:100}
+.modal-overlay.show{display:flex}
+.modal{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;max-width:400px;width:90%;max-height:80vh;overflow:auto;box-shadow:var(--shadow-md);animation:modalIn .2s ease}
+@keyframes modalIn{from{opacity:0;transform:scale(0.96)}to{opacity:1;transform:scale(1)}}
+.modal h3{font-size:16px;margin-bottom:14px}
+.modal .modal-actions{display:flex;gap:8px;justify-content:flex-end;margin-top:14px}
+
+/* Pomodoro Timer */
+.pomodoro{position:fixed;bottom:16px;right:16px;z-index:90;background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;box-shadow:var(--shadow-md);min-width:180px;transition:all .3s ease}
+.pomodoro.collapsed{min-width:auto;padding:12px;border-radius:50%;width:48px;height:48px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.pomodoro.collapsed .pomo-full{display:none}
+.pomodoro.collapsed .pomo-mini{display:flex}
+.pomodoro .pomo-mini{display:none;font-size:18px}
+.pomodoro .pomo-full{display:flex;flex-direction:column;align-items:center}
+.pomo-display{font-size:40px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:1px;margin:6px 0;color:var(--accent)}
+.pomo-display.break{color:var(--green)}
+.pomo-label{font-size:12px;color:var(--text2);margin-bottom:6px}
+.pomo-controls{display:flex;gap:6px;margin-top:8px}
+.pomo-controls button{width:34px;height:34px;border-radius:50%;border:1px solid var(--border);background:var(--surface2);color:var(--text);font-size:15px;display:flex;align-items:center;justify-content:center;transition:all .15s ease}
+.pomo-controls button:hover{border-color:var(--accent);color:var(--accent)}
+.pomo-controls button.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.pomo-settings{display:flex;gap:8px;margin-top:8px;align-items:center}
+.pomo-settings label{font-size:11px;color:var(--text2)}
+.pomo-settings input{width:44px;padding:4px 6px;font-size:12px;text-align:center}
+.pomo-progress{height:4px;background:var(--surface2);border-radius:2px;margin-top:8px;overflow:hidden}
+.pomo-progress .fill{height:100%;background:var(--accent);border-radius:2px;transition:width 1s linear}
+.pomo-sessions{font-size:11px;color:var(--text2);margin-top:6px}
+.pomo-sessions .dot{display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--surface2);margin:0 2px}
+.pomo-sessions .dot.done{background:var(--accent)}
+.pomo-collapse{position:absolute;top:8px;right:8px;background:none;border:none;color:var(--text2);cursor:pointer;font-size:14px;padding:4px;border-radius:4px}
+.pomo-collapse:hover{background:var(--surface2)}
+
+/* Print / PDF */
+@media print{
+  body{background:#fff!important;color:#000!important}
+  .sidebar,.topbar,.pomodoro,.modal-overlay,.btn,.card-actions,.today-move,.habit-actions,.dump-actions,.kanban-header,.add-row,.filter-step button,.kanban-card .card-actions{display:none!important}
+  .main{margin-left:0!important}
+  .tab{display:block!important;padding:12px!important}
+  .tab:not(#today):not(#kanban){page-break-before:always}
+  .card,.kanban-card,.today-card,.habit-item,.stat-card{border:1px solid #ddd!important;background:#fff!important;color:#000!important;box-shadow:none!important}
+  .section-title{color:#000!important}
+  .section-desc{color:#555!important}
+}
+
+/* Animations */
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+@keyframes slideIn{from{opacity:0;transform:translateX(20px)}to{opacity:1;transform:translateX(0)}}
+@keyframes slideOut{from{opacity:1;transform:translateX(0)}to{opacity:0;transform:translateX(20px)}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.05)}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-4px)}75%{transform:translateX(4px)}}
+.animate-in{animation:fadeIn .2s ease}
+.card,.kanban-card,.today-card,.habit-item,.filter-step{animation:fadeIn .2s ease}
+.btn:active{transform:scale(0.97)}
+.pomodoro.ring .pomo-display{animation:pulse 1s ease infinite}
+
+/* Toast */
+.toast-container{position:fixed;top:16px;right:16px;z-index:200;display:flex;flex-direction:column;gap:8px;pointer-events:none}
+.toast{pointer-events:auto;display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:8px;font-size:13px;color:#fff;box-shadow:var(--shadow-md);animation:slideIn .25s ease;min-width:220px;max-width:340px}
+.toast.success{background:var(--green);border:1px solid #0d6b5c}
+.toast.error{background:var(--red);border:1px solid #c73636}
+.toast.info{background:var(--accent);border:1px solid #2496c4}
+.toast.leaving{animation:slideOut .25s ease forwards}
+.toast .toast-msg{flex:1}
+.toast .toast-undo{background:rgba(255,255,255,.2);border:none;color:#fff;padding:4px 10px;border-radius:4px;font-size:12px;cursor:pointer;white-space:nowrap;transition:background .15s ease}
+.toast .toast-undo:hover{background:rgba(255,255,255,.35)}
+.toast .toast-close{background:none;border:none;color:rgba(255,255,255,.7);cursor:pointer;font-size:16px;padding:0 4px;border-radius:4px}
+.toast .toast-close:hover{color:#fff;background:rgba(255,255,255,.1)}
+
+/* Search */
+.search-bar{position:relative;flex:1;max-width:280px}
+.search-bar input{padding-left:32px;font-size:13px}
+.search-bar::before{content:"🔍";position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:12px;opacity:.5}
+.search-results{font-size:12px;color:var(--text2);white-space:nowrap}
+
+/* Focus Mode */
+.focus-overlay{position:fixed;inset:0;z-index:150;background:var(--bg);display:none;flex-direction:column;align-items:center;justify-content:center;padding:24px;animation:fadeIn .2s ease}
+.focus-overlay.show{display:flex}
+.focus-close{position:absolute;top:16px;right:20px;background:none;border:none;color:var(--text2);font-size:22px;cursor:pointer;padding:6px 10px;border-radius:6px;transition:all .15s ease}
+.focus-close:hover{color:var(--text);background:var(--surface2)}
+.focus-card{max-width:640px;width:100%;text-align:center}
+.focus-text{font-size:28px;font-weight:600;line-height:1.4;margin-bottom:24px;color:var(--text)}
+.focus-meta{font-size:13px;color:var(--text2);margin-bottom:28px;display:flex;gap:14px;justify-content:center}
+.focus-timer{font-size:56px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--accent);margin-bottom:20px}
+.focus-timer.running{color:var(--green)}
+.focus-timer-btn{display:inline-flex;align-items:center;gap:8px;padding:10px 20px;border-radius:8px;border:1px solid var(--border);background:var(--surface);color:var(--text);font-size:14px;cursor:pointer;transition:all .15s ease;margin:0 4px;box-shadow:var(--shadow)}
+.focus-timer-btn:hover{border-color:var(--accent);color:var(--accent);box-shadow:var(--shadow-md)}
+.focus-timer-btn.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.focus-actions{display:flex;gap:10px;justify-content:center;margin-top:28px}
+.focus-actions .btn{padding:12px 28px;font-size:14px}
+.focus-progress{font-size:14px;color:var(--text2);margin-top:20px}
+
+/* Time Tracking */
+.time-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--text2);background:var(--surface2);padding:3px 8px;border-radius:6px;margin-top:6px}
+.time-badge.tracking{color:var(--green);animation:pulse 1.5s ease infinite}
+.timer-btn{width:26px;height:26px;border-radius:50%;border:1px solid var(--border);background:var(--surface2);color:var(--text2);font-size:12px;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .15s ease}
+.timer-btn:hover{border-color:var(--accent);color:var(--accent)}
+.timer-btn.active{background:var(--green);border-color:var(--green);color:#fff}
+
+/* Recurring Badge */
+.repeat-badge{display:inline-flex;align-items:center;gap:4px;font-size:11px;color:var(--purple);background:#f3eefa;padding:3px 8px;border-radius:6px;margin-top:6px}
+
+/* Repeat select in modal */
+.modal select{background:var(--surface);border:1px solid var(--border);color:var(--text);padding:8px 12px;border-radius:6px;font-size:14px;width:100%;outline:none}
+.modal label{font-size:13px;color:var(--text2);display:block;margin-bottom:6px}
+</style>
+</head>
+<body>
+<aside class="sidebar" id="sidebar">
+  <div class="sidebar-header">
+    <span class="sidebar-logo">&#x2696;</span>
+    <div class="sidebar-title"><span>Кайдзен</span></div>
+    <button class="sidebar-toggle" onclick="toggleSidebar()" title="Свернуть">&#x276E;</button>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="sidebar-section-title">Рабочее пространство</div>
+    <button class="sidebar-item active" data-tab="brain-dump">
+      <span class="sidebar-icon">&#x1F4AD;</span>
+      <span class="sidebar-label">Выгрузка</span>
+    </button>
+    <button class="sidebar-item" data-tab="filters">
+      <span class="sidebar-icon">&#x1F50D;</span>
+      <span class="sidebar-label">Фильтры</span>
+    </button>
+    <button class="sidebar-item" data-tab="kanban">
+      <span class="sidebar-icon">&#x1F4CB;</span>
+      <span class="sidebar-label">Канбан</span>
+    </button>
+    <button class="sidebar-item" data-tab="habits">
+      <span class="sidebar-icon">&#x2705;</span>
+      <span class="sidebar-label">Привычки</span>
+    </button>
+    <button class="sidebar-item" data-tab="today">
+      <span class="sidebar-icon">&#x1F4C5;</span>
+      <span class="sidebar-label">Сегодня</span>
+    </button>
+    <div class="sidebar-divider"></div>
+    <div class="sidebar-section-title">Инструменты</div>
+    <button class="sidebar-item" data-tab="settings">
+      <span class="sidebar-icon">&#x2699;</span>
+      <span class="sidebar-label">Настройки</span>
+    </button>
+  </nav>
+</aside>
+
+<div class="main">
+  <div class="topbar">
+    <button class="sidebar-toggle mobile-toggle" onclick="toggleSidebar()" style="display:none" title="Меню">&#x2630;</button>
+    <h1 id="topbar-title">Выгрузка головы</h1>
+    <div class="search-bar">
+      <input id="global-search" placeholder="Поиск... (Ctrl+K)" oninput="globalSearch(this.value)">
+    </div>
+    <span class="search-results" id="search-results"></span>
+  </div>
+
+<div class="toast-container" id="toast-container"></div>
+
+<!-- TAB 1: Brain Dump -->
+<div id="brain-dump" class="tab active">
+  <div class="section-title">Выгрузка головы</div>
+  <div class="section-desc">Запишите ВСЁ, что крутится в голове. Каждая мысль — одна карточка. Не фильтруйте, не структурируйте. Просто выгружайте, пока голова не опустеет.</div>
+  <div class="add-row dump-input">
+    <textarea id="brain-input" placeholder="Напишите мысль, задачу, мечту, идею..."></textarea>
+  </div>
+  <div class="dump-actions" style="margin-bottom:16px">
+    <button class="btn" onclick="addBrainCard()">Добавить</button>
+    <button class="btn btn-outline" onclick="clearBrainDump()">Очистить всё</button>
+    <span class="counter" id="brain-count"></span>
+  </div>
+  <div id="brain-cards" class="brain-cards"></div>
+  <div style="margin-top:16px;padding:12px;background:var(--surface);border-radius:8px;border:1px solid var(--border)">
+    <div style="font-size:13px;color:var(--text2)">Когда голова пуста — переходите к <strong style="color:var(--accent)">Фильтрам</strong>, чтобы отделить своё от чужого.</div>
+  </div>
+</div>
+
+<!-- TAB 2: Filters -->
+<div id="filters" class="tab">
+  <div class="section-title">Фильтры</div>
+  <div class="section-desc">Пропустите все карточки через 3 фильтра. Это делается ОДИН раз при начальной настройке.</div>
+  
+  <div class="filter-step">
+    <h3><span class="step-num">1</span> Хочу / Должен</h3>
+    <div class="section-desc">Разделите карточки: что вы ХОТИТЕ делать vs что вам ГОВОРЯТ делать. "Должен" = чужое "хочу".</div>
+    <div class="dual-col">
+      <div class="col" id="filter-want" ondrop="dropFilter(event,'want')" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')">
+        <h4 style="color:var(--green)">Я ХОЧУ</h4>
+      </div>
+      <div class="col" id="filter-should" ondrop="dropFilter(event,'should')" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')">
+        <h4 style="color:var(--red)">Я ДОЛЖЕН</h4>
+      </div>
+    </div>
+  </div>
+
+  <div class="filter-step">
+    <h3><span class="step-num">2</span> Фильтр миссии</h3>
+    <div class="section-desc">Для каждой карточки из "ХОЧУ" ответьте: делает ли это вас счастливее? Полезно обществу? Полезно среде?</div>
+    <div class="mission-grid">
+      <div class="mission-col yes" id="filter-happy" ondrop="dropFilter(event,'happy')" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')">
+        <h4 style="color:var(--green)">Делает счастливее</h4>
+      </div>
+      <div class="mission-col" id="filter-society" ondrop="dropFilter(event,'society')" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')">
+        <h4 style="color:var(--orange)">Полезно обществу</h4>
+      </div>
+      <div class="mission-col" id="filter-nature" ondrop="dropFilter(event,'nature')" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')">
+        <h4 style="color:var(--green)">Полезно среде</h4>
+      </div>
+    </div>
+    <div class="trash-col" id="filter-trash" ondrop="dropFilter(event,'trash')" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')">
+      <h4>Анализ и корзина</h4>
+      <div style="font-size:12px;color:var(--text2)">Сначала проанализируйте, потом удалите. Не повторяйте ошибки.</div>
+    </div>
+  </div>
+
+  <div class="filter-step">
+    <h3><span class="step-num">3</span> 5 направлений жизни</h3>
+    <div class="section-desc">Распределите карточки по сферам. Убедитесь, что ни одна сфера не пуста.</div>
+    <div class="dir-grid">
+      <div class="dir-col" data-dir="dev" ondrop="dropDir(event,'dev')" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')">
+        <div class="dir-icon" style="color:var(--yellow)">&#x1F4D6;</div>
+        <h4 style="color:var(--yellow)">Личностное развитие</h4>
+      </div>
+      <div class="dir-col" data-dir="family" ondrop="dropDir(event,'family')" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')">
+        <div class="dir-icon" style="color:var(--purple)">&#x1F3E0;</div>
+        <h4 style="color:var(--purple)">Семья</h4>
+      </div>
+      <div class="dir-col" data-dir="biz" ondrop="dropDir(event,'biz')" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')">
+        <div class="dir-icon" style="color:var(--blue)">&#x1F4BC;</div>
+        <h4 style="color:var(--blue)">Бизнес</h4>
+      </div>
+      <div class="dir-col" data-dir="community" ondrop="dropDir(event,'community')" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')">
+        <div class="dir-icon" style="color:var(--pink)">&#x1F91D;</div>
+        <h4 style="color:var(--pink)">Общество</h4>
+      </div>
+      <div class="dir-col" data-dir="hobby" ondrop="dropDir(event,'hobby')" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')">
+        <div class="dir-icon" style="color:var(--orange)">&#x1F3AE;</div>
+        <h4 style="color:var(--orange)">Хобби</h4>
+      </div>
+    </div>
+    <div style="margin-top:12px;display:flex;gap:8px">
+      <button class="btn btn-sm" onclick="sendFilteredToKanban()">Отправить в Канбан</button>
+      <button class="btn btn-sm btn-outline" onclick="resetFilters()">Сбросить фильтры</button>
+    </div>
+  </div>
+</div>
+
+<!-- TAB 3: Kanban -->
+<div id="kanban" class="tab">
+  <div class="kanban-header">
+    <div class="section-title" style="margin:0">Канбан-доска</div>
+    <select id="kanban-month" onchange="renderKanban()">
+      <option value="year">Год</option>
+      <option value="0">Январь</option>
+      <option value="1">Февраль</option>
+      <option value="2">Март</option>
+      <option value="3">Апрель</option>
+      <option value="4">Май</option>
+      <option value="5">Июнь</option>
+      <option value="6">Июль</option>
+      <option value="7">Август</option>
+      <option value="8">Сентябрь</option>
+      <option value="9">Октябрь</option>
+      <option value="10">Ноябрь</option>
+      <option value="11">Декабрь</option>
+    </select>
+    <button class="btn btn-sm" onclick="addKanbanCard()">+ Карточка</button>
+  </div>
+  <div class="kanban-board" id="kanban-board"></div>
+</div>
+
+<!-- TAB 4: Habits -->
+<div id="habits" class="tab">
+  <div class="habits-header">
+    <div class="section-title" style="margin:0">Трекер привычек</div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-sm btn-outline" onclick="prevHabitWeek()">&#x2190;</button>
+      <span id="habit-week-label" style="font-size:13px;color:var(--text2);line-height:32px"></span>
+      <button class="btn btn-sm btn-outline" onclick="nextHabitWeek()">&#x2192;</button>
+    </div>
+  </div>
+
+  <div class="habit-add">
+    <input id="habit-input" placeholder="Новая привычка (напр. Выпить воды)" onkeypress="if(event.key==='Enter')addHabit()">
+    <button class="btn" onclick="addHabit()">Добавить</button>
+  </div>
+
+  <div class="habit-stats" id="habit-stats"></div>
+  <div style="height:16px"></div>
+  
+  <div id="habit-days-container"></div>
+
+  <div class="chart-container" style="margin-top:16px">
+    <h3>Динамика за 6 недель</h3>
+    <div class="chart" id="habit-chart"></div>
+  </div>
+</div>
+
+<!-- TAB 5: Today -->
+<div id="today" class="tab">
+  <div class="today-header">
+    <div class="section-title" style="margin:0">Сегодня</div>
+    <span id="today-date" style="font-size:13px;color:var(--text2)"></span>
+  </div>
+  <div class="progress-bar"><div class="fill" id="today-progress" style="width:0%"></div></div>
+  <div class="today-summary" id="today-summary"></div>
+  <div class="today-list" id="today-list"></div>
+  <div id="today-empty" class="empty" style="display:none">
+    <div class="icon">&#x2728;</div>
+    <p>На сегодня задач нет.<br>Добавьте карточки в Канбане.</p>
+  </div>
+</div>
+
+<!-- TAB 6: Settings -->
+<div id="settings" class="tab">
+  <div class="section-title">Настройки и данные</div>
+  
+  <!-- Mission -->
+  <div class="filter-step" style="margin-bottom:20px">
+    <h3>&#x1F3AF; Моя миссия (Икигай)</h3>
+    <div class="section-desc">Ответьте на главный вопрос: кто я и для чего я живу? Это фильтр для всех задач.</div>
+    <textarea id="mission-input" placeholder="Например: Прожить счастливую жизнь с пользой для общества и окружающей среды" style="margin-bottom:8px" oninput="saveMission()"></textarea>
+    <div id="mission-preview" style="font-size:13px;color:var(--text2);font-style:italic"></div>
+  </div>
+
+  <!-- Export/Import -->
+  <div class="filter-step" style="margin-bottom:20px">
+    <h3>&#x1F4BE; Экспорт и импорт данных</h3>
+    <div class="section-desc">Сохраняйте резервные копии и переносите данные между устройствами.</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn" onclick="exportJSON()">&#x1F4E5; Экспорт JSON</button>
+      <button class="btn btn-outline" onclick="document.getElementById('import-file').click()">&#x1F4E4; Импорт JSON</button>
+      <button class="btn btn-outline" onclick="exportMarkdown()">&#x1F4C4; Экспорт Markdown</button>
+      <button class="btn btn-outline" onclick="exportPDF()">&#x1F4C4; Экспорт PDF</button>
+      <button class="btn btn-danger btn-sm" onclick="clearAllData()">&#x1F5D1; Очистить всё</button>
+    </div>
+    <div id="export-status" style="font-size:12px;color:var(--green);margin-top:8px"></div>
+  </div>
+
+  <!-- Stats -->
+  <div class="filter-step" style="margin-bottom:20px">
+    <h3>&#x1F4CA; Статистика</h3>
+    <div id="global-stats"></div>
+  </div>
+
+  <!-- Shortcuts -->
+  <div class="filter-step">
+    <h3>&#x2328; Горячие клавиши</h3>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:5px;font-size:11px">
+      <div><kbd style="background:var(--surface2);padding:1px 4px;border-radius:3px">Ctrl+Z</kbd> Отменить</div>
+      <div><kbd style="background:var(--surface2);padding:1px 4px;border-radius:3px">/</kbd> Поиск</div>
+      <div><kbd style="background:var(--surface2);padding:1px 4px;border-radius:3px">Ctrl+E</kbd> Экспорт JSON</div>
+      <div><kbd style="background:var(--surface2);padding:1px 4px;border-radius:3px">Ctrl+I</kbd> Импорт JSON</div>
+      <div><kbd style="background:var(--surface2);padding:1px 4px;border-radius:3px">Ctrl+P</kbd> Экспорт PDF</div>
+      <div><kbd style="background:var(--surface2);padding:1px 4px;border-radius:3px">1-6</kbd> Вкладки</div>
+      <div><kbd style="background:var(--surface2);padding:1px 4px;border-radius:3px">N</kbd> Новая карточка</div>
+      <div><kbd style="background:var(--surface2);padding:1px 4px;border-radius:3px">Esc</kbd> Закрыть</div>
+      <div><kbd style="background:var(--surface2);padding:1px 4px;border-radius:3px">DblClick</kbd> Фокус-режим</div>
+      <div><kbd style="background:var(--surface2);padding:1px 4px;border-radius:3px">←→</kbd> Фокус: навигация</div>
+      <div><kbd style="background:var(--surface2);padding:1px 4px;border-radius:3px">Space</kbd> Фокус: таймер</div>
+    </div>
+  </div>
+</div>
+</div><!-- /main -->
+
+<!-- Modal -->
+<div class="modal-overlay" id="modal">
+  <div class="modal">
+    <h3 id="modal-title">Новая карточка</h3>
+    <input id="modal-input" placeholder="Текст карточки" onkeypress="if(event.key==='Enter')modalConfirm()">
+    <div style="margin-top:10px">
+      <label>Категория:</label>
+      <select id="modal-category">
+        <option value="dev">Личностное развитие</option>
+        <option value="family">Семья</option>
+        <option value="biz">Бизнес</option>
+        <option value="community">Общество</option>
+        <option value="hobby">Хобби</option>
+      </select>
+    </div>
+    <div style="margin-top:8px">
+      <label>Повтор:</label>
+      <select id="modal-repeat">
+        <option value="">Без повтора</option>
+        <option value="daily">Ежедневно</option>
+        <option value="weekly">Еженедельно</option>
+        <option value="monthly">Ежемесячно</option>
+      </select>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline btn-sm" onclick="closeModal()">Отмена</button>
+      <button class="btn btn-sm" onclick="modalConfirm()">Добавить</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==================== SIDEBAR ====================
+const TAB_TITLES = {
+  'brain-dump': 'Выгрузка головы',
+  'filters': 'Фильтры',
+  'kanban': 'Канбан-доска',
+  'habits': 'Трекер привычек',
+  'today': 'Сегодня',
+  'settings': 'Настройки'
+};
+
+function toggleSidebar(){
+  const sidebar = document.getElementById('sidebar');
+  if(window.innerWidth <= 768){
+    sidebar.classList.toggle('mobile-open');
+  } else {
+    sidebar.classList.toggle('collapsed');
+  }
+}
+
+// Show mobile toggle on small screens
+function checkMobile(){
+  const mobileBtn = document.querySelector('.mobile-toggle');
+  if(mobileBtn) mobileBtn.style.display = window.innerWidth <= 768 ? '' : 'none';
+}
+window.addEventListener('resize', checkMobile);
+checkMobile();
+
+function switchTab(tabId){
+  document.querySelectorAll('.sidebar-item').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  const btn = document.querySelector(`.sidebar-item[data-tab="${tabId}"]`);
+  if(btn) btn.classList.add('active');
+  const tab = document.getElementById(tabId);
+  if(tab) tab.classList.add('active');
+  document.getElementById('topbar-title').textContent = TAB_TITLES[tabId] || '';
+  refreshTab(tabId);
+  // Mobile: close sidebar after selection
+  if(window.innerWidth <= 768) document.getElementById('sidebar').classList.remove('mobile-open');
+}
+
+// ==================== TOAST ====================
+function showToast(msg, type='info', opts={}){
+  const container = document.getElementById('toast-container');
+  const toast = document.createElement('div');
+  toast.className = 'toast ' + type;
+  let html = `<span class="toast-msg">${msg}</span>`;
+  if(opts.undo) html += `<button class="toast-undo" onclick="undo();this.closest('.toast').remove()">Отменить</button>`;
+  html += `<button class="toast-close" onclick="this.closest('.toast').remove()">&times;</button>`;
+  toast.innerHTML = html;
+  container.appendChild(toast);
+  setTimeout(() => { toast.classList.add('leaving'); setTimeout(() => toast.remove(), 250); }, opts.duration || 3000);
+}
+
+// ==================== UNDO ====================
+let undoStack = [];
+const UNDO_MAX = 25;
+
+function pushUndo(description, undoFn){
+  undoStack.push({description, undo: undoFn, time: Date.now()});
+  if(undoStack.length > UNDO_MAX) undoStack.shift();
+}
+
+function undo(){
+  if(!undoStack.length){ showToast('Нечего отменять', 'info'); return; }
+  const action = undoStack.pop();
+  action.undo();
+  refreshCurrentTab();
+  showToast('Отменено: ' + action.description, 'info');
+}
+
+// ==================== SEARCH ====================
+let searchQuery = '';
+
+function globalSearch(query){
+  searchQuery = query.trim().toLowerCase();
+  const resultsEl = document.getElementById('search-results');
+  if(!searchQuery){ resultsEl.textContent = ''; refreshCurrentTab(); return; }
+  let count = countSearchResults();
+  resultsEl.textContent = count + ' найдено';
+  // Re-render current tab with filter
+  const active = document.querySelector('nav button.active');
+  if(active) renderSearchTab(active.dataset.tab);
+}
+
+function countSearchResults(){
+  let count = 0;
+  data.brainCards.forEach(c => { if(c.text.toLowerCase().includes(searchQuery)) count++; });
+  ['filterWant','filterShould','filterHappy','filterSociety','filterNature'].forEach(k => {
+    (data[k]||[]).forEach(c => { if(c.text.toLowerCase().includes(searchQuery)) count++; });
+  });
+  Object.values(data.filterDirs).forEach(arr => arr.forEach(c => { if(c.text.toLowerCase().includes(searchQuery)) count++; }));
+  Object.values(data.kanban.months).forEach(month => month.forEach(c => { if(c.text.toLowerCase().includes(searchQuery)) count++; }));
+  data.habits.forEach(h => { if(h.name.toLowerCase().includes(searchQuery)) count++; });
+  return count;
+}
+
+function matchesSearch(text){
+  return !searchQuery || text.toLowerCase().includes(searchQuery);
+}
+
+function renderSearchTab(tab){
+  // Quick re-render with search highlight
+  refreshTab(tab);
+}
+
+function highlightText(text){
+  if(!searchQuery) return esc(text);
+  const escaped = esc(text);
+  const regex = new RegExp('(' + searchQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + ')', 'gi');
+  return escaped.replace(regex, '<mark style="background:var(--yellow);color:#000;border-radius:2px;padding:0 1px">$1</mark>');
+}
+
+// ==================== DATA ====================
+const STORAGE_KEY = 'kaizen_planner';
+const MONTHS = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+const MONTH_SHORT = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+const DIR_NAMES = {dev:'Личностное развитие',family:'Семья',biz:'Бизнес',community:'Общество',hobby:'Хобби'};
+const DIR_COLORS = {dev:'#f0d060',family:'#a07ce8',biz:'#5ca0e8',community:'#e87ca0',hobby:'#f0a050'};
+
+let data = loadData();
+let currentHabitWeekOffset = 0;
+let dragData = null;
+let modalCallback = null;
+
+function defaultData(){
+  return {
+    mission: '',
+    brainCards: [],
+    filterWant: [],
+    filterShould: [],
+    filterHappy: [],
+    filterSociety: [],
+    filterNature: [],
+    filterTrash: [],
+    filterDirs: {dev:[],family:[],biz:[],community:[],hobby:[]},
+    kanban: {
+      backlog: [],
+      months: {}
+    },
+    habits: [],
+    habitLog: {},
+    todayDone: {}
+  };
+}
+
+function loadData(){
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if(raw) return JSON.parse(raw);
+  } catch(e){}
+  return defaultData();
+}
+
+function saveData(){
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+function genId(){ return Date.now().toString(36) + Math.random().toString(36).substr(2,5); }
+
+// ==================== TABS ====================
+document.querySelectorAll('.sidebar-item').forEach(btn => {
+  btn.addEventListener('click', () => switchTab(btn.dataset.tab));
+});
+
+function refreshTab(tab){
+  if(tab==='brain-dump') renderBrainDump();
+  if(tab==='filters') renderFilters();
+  if(tab==='kanban') renderKanban();
+  if(tab==='habits') renderHabits();
+  if(tab==='today') renderToday();
+  if(tab==='settings'){ loadMission(); renderGlobalStats(); }
+}
+
+// ==================== BRAIN DUMP ====================
+function addBrainCard(){
+  const input = document.getElementById('brain-input');
+  const text = input.value.trim();
+  if(!text) return;
+  const id = genId();
+  data.brainCards.push({id, text, dir:null, filter:null});
+  pushUndo('Добавить карточку', () => { data.brainCards = data.brainCards.filter(c => c.id !== id); });
+  input.value = '';
+  input.focus();
+  saveData();
+  renderBrainDump();
+  showToast('Карточка добавлена', 'success');
+}
+
+function removeBrainCard(id){
+  const card = data.brainCards.find(c => c.id === id);
+  data.brainCards = data.brainCards.filter(c => c.id !== id);
+  pushUndo('Удалить карточку', () => { if(card) data.brainCards.push(card); });
+  saveData();
+  renderBrainDump();
+  showToast('Карточка удалена', 'info', {undo: true});
+}
+
+function clearBrainDump(){
+  const cards = [...data.brainCards];
+  data.brainCards = [];
+  pushUndo('Очистить выгрузку', () => { data.brainCards = cards; });
+  saveData();
+  renderBrainDump();
+  showToast('Выгрузка очищена', 'info', {undo: true});
+}
+
+function renderBrainDump(){
+  const container = document.getElementById('brain-cards');
+  const count = document.getElementById('brain-count');
+  const filtered = data.brainCards.filter(c => matchesSearch(c.text));
+  count.textContent = filtered.length + ' карточек' + (searchQuery ? ' (из ' + data.brainCards.length + ')' : '');
+
+  if(!filtered.length){
+    container.innerHTML = data.brainCards.length
+      ? '<div class="empty"><p>Ничего не найдено</p></div>'
+      : '<div class="empty"><div class="icon">&#x1F4AD;</div><p>Начните выгружать мысли из головы</p></div>';
+    return;
+  }
+
+  container.innerHTML = filtered.map(c => `
+    <div class="card" draggable="true" ondragstart="dragBrainCard(event,'${c.id}')">
+      <div class="text">${highlightText(c.text)}</div>
+      <div style="margin-top:6px;display:flex;gap:4px">
+        <button class="btn btn-sm btn-outline" onclick="removeBrainCard('${c.id}')" style="font-size:10px;padding:3px 6px">&#x2715;</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>'); }
+
+// ==================== FILTERS ====================
+function dragBrainCard(e, id){
+  dragData = {source:'brain', id};
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', id);
+}
+
+function dragFilterCard(e, id, source){
+  dragData = {source, id};
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', id);
+}
+
+function dropFilter(e, target){
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  if(!dragData) return;
+  
+  const {source, id} = dragData;
+  let card = null;
+  
+  if(source === 'brain'){
+    const idx = data.brainCards.findIndex(c => c.id === id);
+    if(idx >= 0){ card = data.brainCards.splice(idx,1)[0]; }
+  } else if(source.startsWith('filter-')){
+    const srcKey = source;
+    if(data[srcKey]){
+      const idx = data[srcKey].findIndex(c => c.id === id);
+      if(idx >= 0) card = data[srcKey].splice(idx,1)[0];
+    }
+  }
+  
+  if(card){
+    if(target === 'trash') card._trashed = true;
+    data['filter-' + target] = data['filter-' + target] || [];
+    data['filter-' + target].push(card);
+  }
+  
+  dragData = null;
+  saveData();
+  renderBrainDump();
+  renderFilters();
+}
+
+function dropDir(e, dir){
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  if(!dragData) return;
+  
+  const {source, id} = dragData;
+  let card = null;
+  
+  // Find card from any filter source
+  const filterKeys = ['filterWant','filterHappy','filterSociety','filterNature'];
+  for(const key of filterKeys){
+    if(data[key]){
+      const idx = data[key].findIndex(c => c.id === id);
+      if(idx >= 0){ card = data[key].splice(idx,1)[0]; break; }
+    }
+  }
+  
+  if(card){
+    card.dir = dir;
+    data.filterDirs[dir].push(card);
+  }
+  
+  dragData = null;
+  saveData();
+  renderFilters();
+}
+
+function renderFilters(){
+  // Render brain → want/should
+  const wantCol = document.getElementById('filter-want');
+  const shouldCol = document.getElementById('filter-should');
+  
+  let wantHtml = '<h4 style="color:var(--green)">Я ХОЧУ</h4>';
+  let shouldHtml = '<h4 style="color:var(--red)">Я ДОЛЖЕН</h4>';
+  
+  (data.filterWant||[]).forEach(c => {
+    wantHtml += `<div class="card" draggable="true" ondragstart="dragFilterCard(event,'${c.id}','filterWant')" style="margin-bottom:6px"><div class="text">${esc(c.text)}</div></div>`;
+  });
+  (data.filterShould||[]).forEach(c => {
+    shouldHtml += `<div class="card" draggable="true" ondragstart="dragFilterCard(event,'${c.id}','filterShould')" style="margin-bottom:6px"><div class="text">${esc(c.text)}</div></div>`;
+  });
+  
+  // Also show remaining brain cards at top
+  let brainHtml = '';
+  if(data.brainCards.length){
+    brainHtml = '<div style="margin-bottom:12px;padding:12px;background:var(--surface2);border-radius:8px"><div style="font-size:12px;color:var(--text2);margin-bottom:8px">Карточки из "Выгрузки" (перетащите в колонки):</div>';
+    data.brainCards.forEach(c => {
+      brainHtml += `<div class="card" draggable="true" ondragstart="dragBrainCard(event,'${c.id}')" style="margin-bottom:4px;padding:8px"><div class="text" style="font-size:13px">${esc(c.text)}</div></div>`;
+    });
+    brainHtml += '</div>';
+  }
+  
+  wantCol.innerHTML = wantHtml;
+  shouldCol.innerHTML = shouldHtml;
+  
+  // Mission filter
+  ['happy','society','nature','trash'].forEach(key => {
+    const col = document.getElementById('filter-' + key);
+    const items = data['filter-' + key] || [];
+    let html = col.querySelector('h4').outerHTML;
+    if(key === 'trash') html += '<div style="font-size:12px;color:var(--text2);margin-bottom:8px">Сначала проанализируйте, потом удалите.</div>';
+    items.forEach(c => {
+      html += `<div class="card" draggable="true" ondragstart="dragFilterCard(event,'${c.id}','filter-${key}')" style="margin-bottom:4px;padding:8px"><div class="text" style="font-size:13px">${esc(c.text)}</div></div>`;
+    });
+    col.innerHTML = html;
+  });
+  
+  // Directions
+  Object.keys(data.filterDirs).forEach(dir => {
+    const col = document.querySelector(`.dir-col[data-dir="${dir}"]`);
+    const items = data.filterDirs[dir] || [];
+    let html = col.querySelector('.dir-icon').outerHTML + col.querySelector('h4').outerHTML;
+    items.forEach(c => {
+      html += `<div class="card" draggable="true" ondragstart="dragFilterCard(event,'${c.id}','filterDirs')" style="margin-bottom:4px;padding:6px;font-size:12px"><div class="text">${esc(c.text)}</div></div>`;
+    });
+    col.innerHTML = html;
+  });
+  
+  // Prepend brain cards to want/should area
+  if(data.brainCards.length){
+    wantCol.insertAdjacentHTML('beforebegin', brainHtml);
+  }
+}
+
+function resetFilters(){
+  if(!confirm('Сбросить все фильтры? Карточки вернутся в "Выгрузку".')) return;
+  // Collect all cards back
+  const all = [
+    ...(data.filterWant||[]),
+    ...(data.filterShould||[]),
+    ...(data.filterHappy||[]),
+    ...(data.filterSociety||[]),
+    ...(data.filterNature||[]),
+    ...(data.filterTrash||[]),
+  ];
+  Object.values(data.filterDirs).forEach(arr => all.push(...arr));
+  data.brainCards = all;
+  data.filterWant = [];
+  data.filterShould = [];
+  data.filterHappy = [];
+  data.filterSociety = [];
+  data.filterNature = [];
+  data.filterTrash = [];
+  data.filterDirs = {dev:[],family:[],biz:[],community:[],hobby:[]};
+  saveData();
+  renderBrainDump();
+  renderFilters();
+}
+
+function sendFilteredToKanban(){
+  const all = [
+    ...(data.filterHappy||[]),
+    ...(data.filterSociety||[]),
+    ...(data.filterNature||[]),
+  ];
+  Object.values(data.filterDirs).forEach(arr => all.push(...arr));
+  
+  if(!all.length){ alert('Нет карточек для отправки в Канбан.'); return; }
+  
+  const now = new Date();
+  const monthKey = now.getFullYear() + '-' + String(now.getMonth()).padStart(2,'0');
+  
+  if(!data.kanban.months[monthKey]) data.kanban.months[monthKey] = [];
+  
+  all.forEach(c => {
+    data.kanban.months[monthKey].push({
+      id: genId(),
+      text: c.text,
+      dir: c.dir || 'dev',
+      status: 'todo',
+      created: new Date().toISOString()
+    });
+  });
+  
+  // Clear filters
+  data.filterHappy = [];
+  data.filterSociety = [];
+  data.filterNature = [];
+  data.filterDirs = {dev:[],family:[],biz:[],community:[],hobby:[]};
+  
+  saveData();
+  showToast(`Отправлено ${all.length} карточек в Канбан (${MONTHS[now.getMonth()]})`, 'success');
+  renderFilters();
+}
+
+// ==================== KANBAN ====================
+const KANBAN_COLS = [
+  {key:'todo', label:'Нужно сделать'},
+  {key:'planned', label:'Запланировано'},
+  {key:'process-me', label:'В процессе (мяч у меня)'},
+  {key:'process-other', label:'В процессе (у другого)'},
+  {key:'today', label:'Сегодня'},
+  {key:'done', label:'Сделано'}
+];
+
+function getKanbanCards(){
+  const sel = document.getElementById('kanban-month').value;
+  const now = new Date();
+  
+  if(sel === 'year'){
+    // Show all cards from all months of current year
+    const year = now.getFullYear();
+    let cards = [];
+    Object.keys(data.kanban.months).forEach(k => {
+      if(k.startsWith(year)) cards.push(...data.kanban.months[k]);
+    });
+    return cards;
+  } else {
+    const monthKey = now.getFullYear() + '-' + String(parseInt(sel)).padStart(2,'0');
+    return data.kanban.months[monthKey] || [];
+  }
+}
+
+function getCurrentMonthKey(){
+  const now = new Date();
+  return now.getFullYear() + '-' + String(now.getMonth()).padStart(2,'0');
+}
+
+function addKanbanCard(){
+  modalCallback = (text, dir, repeat) => {
+    const mk = getCurrentMonthKey();
+    if(!data.kanban.months[mk]) data.kanban.months[mk] = [];
+    const id = genId();
+    data.kanban.months[mk].push({ id, text, dir, status: 'todo', repeat, created: new Date().toISOString() });
+    pushUndo('Добавить в Канбан', () => { data.kanban.months[mk] = (data.kanban.months[mk]||[]).filter(c => c.id !== id); });
+    saveData();
+    renderKanban();
+    showToast('Карточка в Канбан' + (repeat ? ' (повтор: ' + (repeat==='daily'?'ежедневно':repeat==='weekly'?'еженедельно':'ежемесячно') + ')' : ''), 'success');
+  };
+  openModal();
+}
+
+function renderKanban(){
+  const board = document.getElementById('kanban-board');
+  const cards = getKanbanCards();
+
+  board.innerHTML = KANBAN_COLS.map(col => {
+    const colCards = cards.filter(c => c.status === col.key && matchesSearch(c.text));
+    return `
+      <div class="kanban-col" ondrop="dropKanban(event,'${col.key}')" ondragover="event.preventDefault();this.classList.add('drag-over')" ondragleave="this.classList.remove('drag-over')">
+        <div class="kanban-col-header">
+          <span>${col.label}</span>
+          <span class="count">${colCards.length}</span>
+        </div>
+        <div class="kanban-col-body">
+          ${colCards.map(c => `
+            <div class="kanban-card" draggable="true" ondragstart="dragKanbanCard(event,'${c.id}')" ondblclick="enterFocus('${c.id}')">
+              <div class="card-color" style="background:${DIR_COLORS[c.dir]||'#666'}"></div>
+              <div>${highlightText(c.text)}</div>
+              ${c.timeSpent ? `<div class="time-badge" data-timer-badge="${c.id}">⏱ ${formatTime(c.timeSpent)}</div>` : `<div class="time-badge" data-timer-badge="${c.id}"></div>`}
+              ${c.repeat ? `<div class="repeat-badge">🔁 ${c.repeat==='daily'?'Ежедневно':c.repeat==='weekly'?'Еженедельно':'Ежемесячно'}</div>` : ''}
+              <div class="card-actions">
+                <button class="timer-btn ${activeTimers[c.id]?'active':''}" onclick="event.stopPropagation();toggleCardTimer('${c.id}')" title="Таймер">⏱</button>
+                <button class="btn btn-sm btn-outline" onclick="event.stopPropagation();enterFocus('${c.id}')" title="Фокус">🎯</button>
+                ${KANBAN_COLS.filter(k => k.key !== c.status).map(k =>
+                  `<button class="btn btn-sm btn-outline" onclick="event.stopPropagation();moveKanbanCard('${c.id}','${k.key}')" title="${k.label}">${k.label.split(' ')[0]}</button>`
+                ).join('')}
+                <button class="btn btn-sm btn-danger" onclick="event.stopPropagation();removeKanbanCard('${c.id}')">&#x2715;</button>
+              </div>
+            </div>
+          `).join('')}
+        </div>
+      </div>
+    `;
+  }).join('');
+}
+
+function dragKanbanCard(e, id){
+  dragData = {source:'kanban', id};
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', id);
+}
+
+function dropKanban(e, status){
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  if(!dragData || dragData.source !== 'kanban') return;
+  moveKanbanCard(dragData.id, status);
+  dragData = null;
+}
+
+function moveKanbanCard(id, status){
+  const mk = getCurrentMonthKey();
+  const cards = data.kanban.months[mk] || [];
+  const card = cards.find(c => c.id === id);
+  if(card){
+    const oldStatus = card.status;
+    card.status = status;
+    pushUndo('Переместить карточку', () => { card.status = oldStatus; });
+    saveData();
+    // Check recurring after moving to done
+    if(status === 'done' && card.repeat){
+      setTimeout(() => { checkRecurringTasks(); renderKanban(); }, 100);
+    }
+    renderKanban();
+  }
+}
+
+function removeKanbanCard(id){
+  const mk = getCurrentMonthKey();
+  if(data.kanban.months[mk]){
+    const card = data.kanban.months[mk].find(c => c.id === id);
+    data.kanban.months[mk] = data.kanban.months[mk].filter(c => c.id !== id);
+    pushUndo('Удалить из Канбан', () => { if(card) data.kanban.months[mk].push(card); });
+    saveData();
+    renderKanban();
+    showToast('Карточка удалена', 'info', {undo: true});
+  }
+}
+
+// ==================== HABITS ====================
+function addHabit(){
+  const input = document.getElementById('habit-input');
+  const name = input.value.trim();
+  if(!name) return;
+  const id = genId();
+  data.habits.push({id, name, created:new Date().toISOString()});
+  pushUndo('Добавить привычку', () => { data.habits = data.habits.filter(h => h.id !== id); });
+  input.value = '';
+  saveData();
+  renderHabits();
+  showToast('Привычка добавлена', 'success');
+}
+
+function removeHabit(id){
+  const habit = data.habits.find(h => h.id === id);
+  const logs = {};
+  Object.keys(data.habitLog).forEach(k => { if(k.startsWith(id+'_')) logs[k] = data.habitLog[k]; });
+  data.habits = data.habits.filter(h => h.id !== id);
+  Object.keys(logs).forEach(k => delete data.habitLog[k]);
+  pushUndo('Удалить привычку', () => { if(habit) data.habits.push(habit); Object.assign(data.habitLog, logs); });
+  saveData();
+  renderHabits();
+  showToast('Привычка удалена', 'info', {undo: true});
+}
+
+function toggleHabit(habitId, dateStr){
+  const key = habitId + '_' + dateStr;
+  const prev = data.habitLog[key];
+  if(!prev) data.habitLog[key] = 'yes';
+  else if(prev === 'yes') data.habitLog[key] = 'no';
+  else delete data.habitLog[key];
+  pushUndo('Отметить привычку', () => { if(prev) data.habitLog[key] = prev; else delete data.habitLog[key]; });
+  saveData();
+  renderHabits();
+}
+
+function getHabitDateRange(){
+  const now = new Date();
+  const start = new Date(now);
+  start.setDate(start.getDate() + currentHabitWeekOffset * 7 - start.getDay() + 1);
+  const dates = [];
+  for(let i = 0; i < 7; i++){
+    const d = new Date(start);
+    d.setDate(d.getDate() + i);
+    dates.push(d);
+  }
+  return dates;
+}
+
+function formatDate(d){
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+
+function getStreak(habitId){
+  let streak = 0;
+  const now = new Date();
+  for(let i = 0; i < 365; i++){
+    const d = new Date(now);
+    d.setDate(d.getDate() - i);
+    const key = habitId + '_' + formatDate(d);
+    if(data.habitLog[key] === 'yes') streak++;
+    else if(data.habitLog[key] === 'no' || i > 0) break;
+  }
+  return streak;
+}
+
+function getCompletionRate(habitId, days){
+  let done = 0;
+  days.forEach(d => {
+    if(data.habitLog[habitId + '_' + formatDate(d)] === 'yes') done++;
+  });
+  return days.length ? Math.round(done / days.length * 100) : 0;
+}
+
+function renderHabits(){
+  const dates = getHabitDateRange();
+  const weekLabel = document.getElementById('habit-week-label');
+  const d0 = dates[0], d6 = dates[6];
+  weekLabel.textContent = `${d0.getDate()} ${MONTH_SHORT[d0.month]} — ${d6.getDate()} ${MONTH_SHORT[d6.month]}`;
+  
+  // Stats
+  const statsEl = document.getElementById('habit-stats');
+  if(data.habits.length){
+    const totalYes = data.habits.reduce((s,h) => {
+      return s + dates.filter(d => data.habitLog[h.id+'_'+formatDate(d)] === 'yes').length;
+    }, 0);
+    const totalPossible = data.habits.length * 7;
+    const rate = totalPossible ? Math.round(totalYes/totalPossible*100) : 0;
+    const maxStreak = data.habits.reduce((s,h) => Math.max(s, getStreak(h.id)), 0);
+    
+    statsEl.innerHTML = `
+      <div class="stat-card"><div class="stat-value">${data.habits.length}</div><div class="stat-label">Привычек</div></div>
+      <div class="stat-card"><div class="stat-value">${rate}%</div><div class="stat-label">Выполнение за неделю</div></div>
+      <div class="stat-card"><div class="stat-value">${maxStreak}</div><div class="stat-label">Лучший стрик (дни)</div></div>
+    `;
+  } else {
+    statsEl.innerHTML = '';
+  }
+  
+  // Days container
+  const container = document.getElementById('habit-days-container');
+  if(!data.habits.length){
+    container.innerHTML = '<div class="empty"><div class="icon">&#x1F3AF;</div><p>Добавьте первую привычку</p></div>';
+    document.getElementById('habit-chart').innerHTML = '';
+    return;
+  }
+  
+  let html = '';
+  dates.forEach(d => {
+    const dateStr = formatDate(d);
+    const isToday = formatDate(new Date()) === dateStr;
+    html += `<div style="margin-bottom:16px;padding:12px;background:var(--surface);border-radius:8px;border:1px solid ${isToday?'var(--accent)':'var(--border)'}">
+      <div style="font-size:13px;font-weight:600;margin-bottom:8px;color:${isToday?'var(--accent)':'var(--text2)'}">${d.getDate()} ${MONTHS[d.getMonth()]}${isToday?' (сегодня)':''}</div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px">`;
+    data.habits.forEach(h => {
+      if(searchQuery && !matchesSearch(h.name)) return;
+      const val = data.habitLog[h.id+'_'+dateStr];
+      const cls = val === 'yes' ? 'yes' : val === 'no' ? 'no' : '';
+      html += `<div class="habit-item" style="flex:1;min-width:150px;padding:6px 10px">
+        <span style="font-size:13px;flex:1">${highlightText(h.name)}</span>
+        <div class="habit-actions">
+          <button class="${cls==='yes'?'yes':''}" onclick="toggleHabit('${h.id}','${dateStr}')">&#x2714;</button>
+          <button class="${cls==='no'?'no':''}" onclick="toggleHabit('${h.id}','${dateStr}')">&#x2716;</button>
+        </div>
+      </div>`;
+    });
+    html += '</div></div>';
+  });
+  container.innerHTML = html;
+  
+  // Chart - 6 weeks
+  const chartEl = document.getElementById('habit-chart');
+  let chartHtml = '';
+  for(let w = 5; w >= 0; w--){
+    const weekDates = [];
+    for(let d = 0; d < 7; d++){
+      const dd = new Date();
+      dd.setDate(dd.getDate() - w*7 - dd.getDay() + 1 + d);
+      weekDates.push(dd);
+    }
+    const total = data.habits.length * 7;
+    let yesCount = 0;
+    data.habits.forEach(h => {
+      weekDates.forEach(d => {
+        if(data.habitLog[h.id+'_'+formatDate(d)] === 'yes') yesCount++;
+      });
+    });
+    const pct = total ? yesCount/total : 0;
+    const h = Math.round(pct * 100);
+    chartHtml += `<div class="bar-group">
+      <div class="bar yes" style="height:${h}%" title="${yesCount}/${total} (${Math.round(pct*100)}%)"></div>
+      <div class="bar-label">${MONTH_SHORT[weekDates[6].getMonth()]} ${weekDates[6].getDate()}</div>
+    </div>`;
+  }
+  chartEl.innerHTML = chartHtml;
+}
+
+function prevHabitWeek(){ currentHabitWeekOffset--; renderHabits(); }
+function nextHabitWeek(){ currentHabitWeekOffset++; renderHabits(); }
+
+// ==================== TODAY ====================
+function renderToday(){
+  const todayStr = formatDate(new Date());
+  const dateEl = document.getElementById('today-date');
+  const d = new Date();
+  dateEl.textContent = `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}, ${['Воскресенье','Понедельник','Вторник','Среда','Четверг','Пятница','Суббота'][d.getDay()]}`;
+  
+  // Collect today's cards
+  const mk = getCurrentMonthKey();
+  const cards = (data.kanban.months[mk] || []).filter(c => c.status === 'today' || c.status === 'process-me');
+  
+  // Also show habits for today
+  const todayHabits = data.habits.map(h => ({
+    id: h.id + '_habit',
+    text: h.name + ' (привычка)',
+    dir: 'habit',
+    isHabit: true,
+    habitId: h.id,
+    done: data.habitLog[h.id + '_' + todayStr] === 'yes'
+  }));
+  
+  const allItems = [...cards.map(c => ({...c, isHabit:false})), ...todayHabits];
+  const doneCount = allItems.filter(c => c.isHabit ? c.done : (data.todayDone[todayStr+'_'+c.id])).length;
+  const totalCount = allItems.length;
+  const pct = totalCount ? Math.round(doneCount/totalCount*100) : 0;
+  
+  document.getElementById('today-progress').style.width = pct + '%';
+  
+  // Summary
+  const summaryEl = document.getElementById('today-summary');
+  const kanbanToday = cards.length;
+  const habitsToday = todayHabits.length;
+  const habitsDone = todayHabits.filter(h => h.done).length;
+  
+  summaryEl.innerHTML = `
+    <div class="stat-card"><div class="stat-value">${kanbanToday}</div><div class="stat-label">Задач из Канбан</div></div>
+    <div class="stat-card"><div class="stat-value">${habitsDone}/${habitsToday}</div><div class="stat-label">Привычек выполнено</div></div>
+    <div class="stat-card"><div class="stat-value">${pct}%</div><div class="stat-label">Общий прогресс</div></div>
+  `;
+  
+  // List
+  const listEl = document.getElementById('today-list');
+  const emptyEl = document.getElementById('today-empty');
+  
+  if(!allItems.length){
+    listEl.innerHTML = '';
+    emptyEl.style.display = '';
+    return;
+  }
+  emptyEl.style.display = 'none';
+  
+  listEl.innerHTML = allItems.map(c => {
+    const isDone = c.isHabit ? c.done : !!data.todayDone[todayStr+'_'+c.id];
+    const catColor = c.isHabit ? '#4ecb71' : (DIR_COLORS[c.dir] || '#666');
+    const catName = c.isHabit ? 'Привычка' : (DIR_NAMES[c.dir] || '');
+    
+    return `<div class="today-card ${isDone?'done':''}">
+      <div class="check ${isDone?'checked':''}" onclick="${c.isHabit ? `toggleHabit('${c.habitId}','${todayStr}');renderToday()` : `toggleTodayDone('${c.id}')`}">
+        ${isDone ? '&#x2714;' : ''}
+      </div>
+      <div class="today-text">${esc(c.text)}</div>
+      <span class="today-cat" style="background:${catColor}22;color:${catColor}">${catName}</span>
+      ${!c.isHabit ? `<div class="today-move">
+        <button class="btn btn-sm btn-outline" onclick="moveTodayCard('${c.id}','done')" title="Готово">&#x2714;</button>
+        <button class="btn btn-sm btn-outline" onclick="moveTodayCard('${c.id}','process-other')" title="Отдать другому">&#x2192;</button>
+      </div>` : ''}
+    </div>`;
+  }).join('');
+}
+
+function toggleTodayDone(id){
+  const todayStr = formatDate(new Date());
+  const key = todayStr + '_' + id;
+  data.todayDone[key] = !data.todayDone[key];
+  saveData();
+  renderToday();
+}
+
+function moveTodayCard(id, status){
+  const mk = getCurrentMonthKey();
+  const cards = data.kanban.months[mk] || [];
+  const card = cards.find(c => c.id === id);
+  if(card){
+    card.status = status;
+    saveData();
+    renderToday();
+  }
+}
+
+// ==================== MODAL ====================
+function openModal(){
+  document.getElementById('modal').classList.add('show');
+  document.getElementById('modal-input').value = '';
+  document.getElementById('modal-input').focus();
+}
+
+function closeModal(){
+  document.getElementById('modal').classList.remove('show');
+  modalCallback = null;
+}
+
+function modalConfirm(){
+  const text = document.getElementById('modal-input').value.trim();
+  const dir = document.getElementById('modal-category').value;
+  const repeat = document.getElementById('modal-repeat').value || null;
+  if(!text) return;
+  if(modalCallback) modalCallback(text, dir, repeat);
+  closeModal();
+}
+
+// ==================== FOCUS MODE ====================
+let focusState = { cards: [], index: 0, timerInterval: null, timeSpent: 0, timerRunning: false };
+
+function enterFocus(cardId){
+  const mk = getCurrentMonthKey();
+  const cards = (data.kanban.months[mk] || []).filter(c => c.status !== 'done');
+  if(!cards.length){ showToast('Нет задач для фокуса', 'info'); return; }
+  const idx = cards.findIndex(c => c.id === cardId);
+  focusState.cards = cards;
+  focusState.index = idx >= 0 ? idx : 0;
+  focusState.timeSpent = 0;
+  focusState.timerRunning = false;
+  document.getElementById('focus-overlay').classList.add('show');
+  renderFocusCard();
+}
+
+function exitFocus(){
+  if(focusState.timerRunning) toggleFocusTimer();
+  document.getElementById('focus-overlay').classList.remove('show');
+  refreshCurrentTab();
+}
+
+function renderFocusCard(){
+  const card = focusState.cards[focusState.index];
+  if(!card){ exitFocus(); return; }
+  document.getElementById('focus-text').textContent = card.text;
+  document.getElementById('focus-meta').innerHTML = `
+    <span>${DIR_NAMES[card.dir]||''}</span>
+    <span>${focusState.index+1} / ${focusState.cards.length}</span>
+    ${card.timeSpent ? '<span>⏱ ' + formatTime(card.timeSpent) + '</span>' : ''}
+  `;
+  document.getElementById('focus-progress').textContent =
+    `Задача ${focusState.index+1} из ${focusState.cards.length}`;
+  renderFocusTimer();
+}
+
+function renderFocusTimer(){
+  const el = document.getElementById('focus-timer');
+  const total = (focusState.cards[focusState.index]?.timeSpent || 0) + focusState.timeSpent;
+  el.textContent = formatTime(total);
+  el.className = 'focus-timer' + (focusState.timerRunning ? ' running' : '');
+  const btn = document.getElementById('focus-timer-btn');
+  btn.innerHTML = focusState.timerRunning ? '&#x23F8; Пауза' : '&#x23F5; Старт';
+  btn.className = 'focus-timer-btn' + (focusState.timerRunning ? ' active' : '');
+}
+
+function toggleFocusTimer(){
+  const card = focusState.cards[focusState.index];
+  if(!card) return;
+  if(focusState.timerRunning){
+    clearInterval(focusState.timerInterval);
+    focusState.timerRunning = false;
+    card.timeSpent = (card.timeSpent || 0) + focusState.timeSpent;
+    focusState.timeSpent = 0;
+    saveData();
+  } else {
+    focusState.timerRunning = true;
+    focusState.timerInterval = setInterval(() => {
+      focusState.timeSpent++;
+      renderFocusTimer();
+    }, 1000);
+  }
+  renderFocusTimer();
+}
+
+function focusDone(){
+  if(focusState.timerRunning) toggleFocusTimer();
+  const card = focusState.cards[focusState.index];
+  if(card) moveKanbanCard(card.id, 'done');
+  showToast('Задача выполнена!', 'success');
+  focusState.cards.splice(focusState.index, 1);
+  if(focusState.cards.length === 0){ exitFocus(); return; }
+  if(focusState.index >= focusState.cards.length) focusState.index = 0;
+  renderFocusCard();
+}
+
+function focusSkip(){
+  if(focusState.timerRunning) toggleFocusTimer();
+  focusState.index++;
+  if(focusState.index >= focusState.cards.length) focusState.index = 0;
+  focusState.timeSpent = 0;
+  renderFocusCard();
+}
+
+function focusPrev(){
+  if(focusState.timerRunning) toggleFocusTimer();
+  focusState.index--;
+  if(focusState.index < 0) focusState.index = focusState.cards.length - 1;
+  focusState.timeSpent = 0;
+  renderFocusCard();
+}
+
+function formatTime(sec){
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  const s = sec % 60;
+  if(h > 0) return `${h}ч ${String(m).padStart(2,'0')}м`;
+  return `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+}
+
+// ==================== TIME TRACKING (standalone) ====================
+let activeTimers = {}; // cardId -> intervalId
+
+function toggleCardTimer(cardId){
+  const mk = getCurrentMonthKey();
+  const card = (data.kanban.months[mk] || []).find(c => c.id === cardId);
+  if(!card) return;
+
+  if(activeTimers[cardId]){
+    // Stop
+    clearInterval(activeTimers[cardId]);
+    delete activeTimers[cardId];
+    saveData();
+    renderKanban();
+    showToast('Таймер остановлен: ' + formatTime(card.timeSpent || 0), 'info');
+  } else {
+    // Start
+    card._timerStart = Date.now();
+    activeTimers[cardId] = setInterval(() => {
+      const elapsed = Math.floor((Date.now() - card._timerStart) / 1000);
+      card.timeSpent = (card._timerStart ? (card._prevTime || 0) : 0) + elapsed;
+      // Update badge in DOM
+      const badge = document.querySelector(`[data-timer-badge="${cardId}"]`);
+      if(badge) badge.textContent = '⏱ ' + formatTime(card.timeSpent);
+    }, 1000);
+    renderKanban();
+    showToast('Таймер запущен', 'success');
+  }
+}
+
+function startCardTimer(cardId){
+  const mk = getCurrentMonthKey();
+  const card = (data.kanban.months[mk] || []).find(c => c.id === cardId);
+  if(!card || activeTimers[cardId]) return;
+  card._prevTime = card.timeSpent || 0;
+  card._timerStart = Date.now();
+  activeTimers[cardId] = setInterval(() => {
+    const elapsed = Math.floor((Date.now() - card._timerStart) / 1000);
+    card.timeSpent = card._prevTime + elapsed;
+  }, 1000);
+}
+
+function stopAllTimers(){
+  Object.keys(activeTimers).forEach(id => clearInterval(activeTimers[id]));
+  activeTimers = {};
+  saveData();
+}
+
+// ==================== RECURRING TASKS ====================
+function checkRecurringTasks(){
+  const today = formatDate(new Date());
+  const dow = new Date().getDay(); // 0=Sun
+  const dom = new Date().getDate();
+  const mk = getCurrentMonthKey();
+
+  Object.values(data.kanban.months).forEach(month => {
+    month.forEach(card => {
+      if(!card.repeat || card.status !== 'done') return;
+
+      // Check if already created for today
+      const alreadyExists = month.some(c =>
+        c.repeatSource === card.id && c.created && c.created.startsWith(today)
+      );
+      if(alreadyExists) return;
+
+      let shouldRepeat = false;
+      if(card.repeat === 'daily') shouldRepeat = true;
+      if(card.repeat === 'weekly' && dow === 1) shouldRepeat = true; // Monday
+      if(card.repeat === 'monthly' && dom === 1) shouldRepeat = true;
+
+      if(shouldRepeat){
+        const newCard = {
+          id: genId(),
+          text: card.text,
+          dir: card.dir,
+          status: 'todo',
+          repeat: card.repeat,
+          repeatSource: card.id,
+          created: new Date().toISOString()
+        };
+        month.push(newCard);
+      }
+    });
+  });
+  saveData();
+}
+
+// ==================== SETTINGS ====================
+function saveMission(){
+  const val = document.getElementById('mission-input').value.trim();
+  data.mission = val;
+  saveData();
+  document.getElementById('mission-preview').textContent = val ? `Ваша миссия: "${val}"` : '';
+}
+
+function loadMission(){
+  const input = document.getElementById('mission-input');
+  if(data.mission){
+    input.value = data.mission;
+    document.getElementById('mission-preview').textContent = `Ваша миссия: "${data.mission}"`;
+  }
+}
+
+function renderGlobalStats(){
+  const el = document.getElementById('global-stats');
+  
+  // Count all cards
+  let totalBrain = data.brainCards.length;
+  let totalFilter = (data.filterWant||[]).length + (data.filterShould||[]).length + 
+    (data.filterHappy||[]).length + (data.filterSociety||[]).length + (data.filterNature||[]).length;
+  let totalDirs = Object.values(data.filterDirs).reduce((s,a) => s + a.length, 0);
+  
+  let totalKanban = 0;
+  let kanbanDone = 0;
+  Object.values(data.kanban.months).forEach(month => {
+    totalKanban += month.length;
+    kanbanDone += month.filter(c => c.status === 'done').length;
+  });
+  
+  let totalHabits = data.habits.length;
+  let habitEntries = Object.keys(data.habitLog).length;
+  
+  // Balance
+  const dirCounts = {};
+  Object.keys(DIR_NAMES).forEach(d => {
+    dirCounts[d] = (data.filterDirs[d]||[]).length;
+    Object.values(data.kanban.months).forEach(month => {
+      dirCounts[d] += month.filter(c => c.dir === d).length;
+    });
+  });
+  
+  el.innerHTML = `
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px;margin-bottom:16px">
+      <div class="stat-card"><div class="stat-value">${totalBrain}</div><div class="stat-label">В голове</div></div>
+      <div class="stat-card"><div class="stat-value">${totalFilter}</div><div class="stat-label">На фильтрах</div></div>
+      <div class="stat-card"><div class="stat-value">${totalKanban}</div><div class="stat-label">В Канбан</div></div>
+      <div class="stat-card"><div class="stat-value">${kanbanDone}</div><div class="stat-label">Выполнено</div></div>
+      <div class="stat-card"><div class="stat-value">${totalHabits}</div><div class="stat-label">Привычек</div></div>
+    </div>
+    <div style="font-size:13px;color:var(--text2);margin-bottom:8px">Баланс по сферам жизни:</div>
+    <div style="display:flex;gap:8px;height:24px;border-radius:12px;overflow:hidden;margin-bottom:8px">
+      ${Object.entries(dirCounts).map(([k,v]) => {
+        const total = Object.values(dirCounts).reduce((s,n) => s+n, 0) || 1;
+        const pct = Math.round(v/total*100);
+        return `<div style="flex:${Math.max(pct,1)};background:${DIR_COLORS[k]};opacity:${v?1:0.3}" title="${DIR_NAMES[k]}: ${v}"></div>`;
+      }).join('')}
+    </div>
+    <div style="display:flex;gap:12px;flex-wrap:wrap;font-size:12px">
+      ${Object.entries(dirCounts).map(([k,v]) => `<span style="color:${DIR_COLORS[k]}">&#x25CF; ${DIR_NAMES[k]}: ${v}</span>`).join('')}
+    </div>
+  `;
+}
+
+// ==================== EXPORT/IMPORT ====================
+function exportJSON(){
+  const blob = new Blob([JSON.stringify(data, null, 2)], {type:'application/json'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const date = new Date().toISOString().slice(0,10);
+  a.href = url;
+  a.download = `kaizen-backup-${date}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showExportStatus('Экспорт выполнен! Файл сохранён.');
+}
+
+function importJSON(e){
+  const file = e.target.files[0];
+  if(!file) return;
+
+  const reader = new FileReader();
+  reader.onload = function(ev){
+    try {
+      const imported = JSON.parse(ev.target.result);
+      if(!imported.brainCards && !imported.kanban) throw new Error('Неверный формат');
+
+      const prevData = JSON.parse(JSON.stringify(data));
+      data = imported;
+      pushUndo('Импорт данных', () => { data = prevData; });
+      saveData();
+      refreshCurrentTab();
+      showToast(`Импортировано: ${file.name}`, 'success');
+    } catch(err) {
+      showToast('Ошибка: ' + err.message, 'error');
+    }
+  };
+  reader.readAsText(file);
+  e.target.value = '';
+}
+
+function exportMarkdown(){
+  let md = '# Кайдзен Планировщик - Экспорт\n\n';
+  md += `Дата: ${new Date().toLocaleDateString('ru-RU')}\n\n`;
+  
+  if(data.mission){
+    md += `## Миссия\n${data.mission}\n\n`;
+  }
+  
+  // Kanban
+  md += '## Канбан\n\n';
+  Object.entries(data.kanban.months).forEach(([month, cards]) => {
+    if(cards.length){
+      md += `### ${month}\n`;
+      KANBAN_COLS.forEach(col => {
+        const colCards = cards.filter(c => c.status === col.key);
+        if(colCards.length){
+          md += `#### ${col.label}\n`;
+          colCards.forEach(c => {
+            md += `- [${c.status==='done'?'x':' '}] ${c.text} (${DIR_NAMES[c.dir]||''})\n`;
+          });
+          md += '\n';
+        }
+      });
+    }
+  });
+  
+  // Habits
+  if(data.habits.length){
+    md += '## Привычки\n\n';
+    data.habits.forEach(h => {
+      const streak = getStreak(h.id);
+      md += `- ${h.name} (стрик: ${streak} дн.)\n`;
+    });
+    md += '\n';
+  }
+  
+  // Brain dump
+  if(data.brainCards.length){
+    md += '## В голове\n\n';
+    data.brainCards.forEach(c => {
+      md += `- ${c.text}\n`;
+    });
+  }
+  
+  const blob = new Blob([md], {type:'text/markdown'});
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `kaizen-export-${new Date().toISOString().slice(0,10)}.md`;
+  a.click();
+  URL.revokeObjectURL(url);
+  showExportStatus('Markdown экспортирован!');
+}
+
+function clearAllData(){
+  if(!confirm('Удалить ВСЕ данные? Это действие необратимо!')) return;
+  const prevData = JSON.parse(JSON.stringify(data));
+  data = defaultData();
+  pushUndo('Очистить всё', () => { data = prevData; });
+  saveData();
+  refreshCurrentTab();
+  showToast('Все данные удалены', 'info', {undo: true});
+}
+
+function showExportStatus(msg){
+  const el = document.getElementById('export-status');
+  if(el){
+    el.textContent = msg;
+    setTimeout(() => el.textContent = '', 3000);
+  }
+}
+
+function refreshCurrentTab(){
+  const active = document.querySelector('.sidebar-item.active');
+  if(active) refreshTab(active.dataset.tab);
+}
+
+// ==================== KEYBOARD SHORTCUTS ====================
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape') closeModal();
+  
+  // Don't trigger shortcuts when typing in inputs
+  if(e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+  
+  // Tab switching: 1-6
+  if(e.key >= '1' && e.key <= '6' && !e.ctrlKey && !e.metaKey){
+    const tabs = ['brain-dump','filters','kanban','habits','today','settings'];
+    const idx = parseInt(e.key) - 1;
+    if(tabs[idx]) switchTab(tabs[idx]);
+  }
+  
+  // Ctrl+E: Export
+  if((e.ctrlKey || e.metaKey) && e.key === 'e'){
+    e.preventDefault();
+    exportJSON();
+  }
+
+  // Ctrl+I: Import (trigger file input)
+  if((e.ctrlKey || e.metaKey) && e.key === 'i'){
+    e.preventDefault();
+    document.getElementById('import-file').click();
+  }
+
+  // Ctrl+P: Export PDF
+  if((e.ctrlKey || e.metaKey) && e.key === 'p'){
+    e.preventDefault();
+    exportPDF();
+  }
+
+  // Ctrl+Z: Undo
+  if((e.ctrlKey || e.metaKey) && e.key === 'z'){
+    e.preventDefault();
+    undo();
+  }
+
+  // Ctrl+F or /: Focus search
+  if((e.ctrlKey || e.metaKey) && e.key === 'f'){
+    e.preventDefault();
+    document.getElementById('global-search').focus();
+  }
+  if(e.key === '/' && !e.ctrlKey && !e.metaKey && e.target.tagName !== 'INPUT' && e.target.tagName !== 'TEXTAREA'){
+    e.preventDefault();
+    document.getElementById('global-search').focus();
+  }
+
+  // N: New card (Kanban or Brain dump)
+  if(e.key === 'n' || e.key === 'т'){
+    const activeTab = document.querySelector('nav button.active')?.dataset.tab;
+    if(activeTab === 'kanban') addKanbanCard();
+    else if(activeTab === 'brain-dump') document.getElementById('brain-input').focus();
+  }
+});
+
+// ==================== INIT ====================
+checkRecurringTasks();
+renderBrainDump();
+loadMission();
+renderGlobalStats();
+
+// Keyboard shortcut
+document.addEventListener('keydown', e => {
+  if(e.key === 'Escape'){
+    if(document.getElementById('focus-overlay').classList.contains('show')) exitFocus();
+    else closeModal();
+  }
+  // Focus mode arrows
+  if(document.getElementById('focus-overlay').classList.contains('show')){
+    if(e.key === 'ArrowRight') focusSkip();
+    if(e.key === 'ArrowLeft') focusPrev();
+    if(e.key === ' ' || e.code === 'Space'){ e.preventDefault(); toggleFocusTimer(); }
+  }
+});
+</script>
+<!-- Focus Mode -->
+<div class="focus-overlay" id="focus-overlay">
+  <button class="focus-close" onclick="exitFocus()">&times;</button>
+  <div class="focus-card">
+    <div class="focus-meta" id="focus-meta"></div>
+    <div class="focus-text" id="focus-text"></div>
+    <div class="focus-timer" id="focus-timer">00:00</div>
+    <div style="margin-bottom:12px">
+      <button class="focus-timer-btn" id="focus-timer-btn" onclick="toggleFocusTimer()">&#x23F5; Старт</button>
+    </div>
+    <div class="focus-actions">
+      <button class="btn btn-outline" onclick="focusPrev()">&#x2190; Предыдущая</button>
+      <button class="btn btn-danger" onclick="focusSkip()">Пропустить &#x2192;</button>
+      <button class="btn" onclick="focusDone()">Готово &#x2714;</button>
+    </div>
+    <div class="focus-progress" id="focus-progress"></div>
+  </div>
+</div>
+
+<!-- Pomodoro Timer -->
+<div class="pomodoro" id="pomodoro" onclick="if(this.classList.contains('collapsed'))togglePomodoro()">
+  <button class="pomo-collapse" onclick="event.stopPropagation();togglePomodoro()" title="Свернуть/развернуть">&#x25BD;</button>
+  <div class="pomo-mini">&#x23F0;</div>
+  <div class="pomo-full">
+    <div class="pomo-label" id="pomo-label">Фокус</div>
+    <div class="pomo-display" id="pomo-display">25:00</div>
+    <div class="pomo-progress"><div class="fill" id="pomo-progress-fill" style="width:100%"></div></div>
+    <div class="pomo-controls">
+      <button id="pomo-start" onclick="pomoStart()" title="Старт">&#x25B6;</button>
+      <button onclick="pomoPause()" title="Пауза">&#x23F8;</button>
+      <button onclick="pomoReset()" title="Сброс">&#x23F9;</button>
+      <button onclick="pomoSkip()" title="Пропустить">&#x23ED;</button>
+    </div>
+    <div class="pomo-sessions" id="pomo-sessions">
+      <span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span>
+    </div>
+    <div class="pomo-settings">
+      <label>Работа: <input type="number" id="pomo-work" value="25" min="1" max="60" onchange="pomoUpdateSettings()"> мин</label>
+      <label>Пауза: <input type="number" id="pomo-break" value="5" min="1" max="30" onchange="pomoUpdateSettings()"> мин</label>
+    </div>
+  </div>
+</div>
+
+<!-- Notification sound (base64) -->
+<audio id="pomo-sound" preload="auto">
+  <source src="data:audio/wav;base64,UklGRnoGAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQoGAACBhYqFbF1fdJivrJBhNjVggoKIeGBGPnuqy8+tfGNUXX6QjH1jREB2ocjTt41hXF1+kI2DY0U/d53Ez7eNYVxdgJCNhGNBPnaexM+3j2NcXYCQjYRkQj92nsTPt49jXF2AkI2EZEI/dp7Ez7ePY1xdgJCNhGRCP3aexM+3j2NcXYCQjYRkQj92nsTPt49jXF2AkI2EZEI=" type="audio/wav">
+</audio>
+
+<script>
+// ==================== POMODORO ====================
+const POMO_KEY = 'kaizen_pomodoro';
+let pomoState = {
+  running: false,
+  isBreak: false,
+  timeLeft: 25 * 60,
+  totalTime: 25 * 60,
+  workMin: 25,
+  breakMin: 5,
+  sessions: 0,
+  interval: null,
+  lastTick: null
+};
+
+function savePomoState(){
+  const toSave = {...pomoState, interval: undefined, lastTick: Date.now()};
+  localStorage.setItem(POMO_KEY, JSON.stringify(toSave));
+}
+
+function loadPomoState(){
+  try {
+    const raw = localStorage.getItem(POMO_KEY);
+    if(!raw) return;
+    const saved = JSON.parse(raw);
+    Object.assign(pomoState, saved);
+    // If it was running, calc elapsed time
+    if(saved.running && saved.lastTick){
+      const elapsed = Math.floor((Date.now() - saved.lastTick) / 1000);
+      pomoState.timeLeft = Math.max(0, saved.timeLeft - elapsed);
+      if(pomoState.timeLeft <= 0){
+        // Timer finished while page was closed
+        pomoState.running = false;
+      }
+    }
+    // Update UI inputs
+    document.getElementById('pomo-work').value = pomoState.workMin;
+    document.getElementById('pomo-break').value = pomoState.breakMin;
+    pomoDisplay();
+    // Resume if was running
+    if(saved.running && pomoState.timeLeft > 0){
+      pomoStart();
+    }
+  } catch(e){}
+}
+
+function pomoUpdateSettings(){
+  pomoState.workMin = parseInt(document.getElementById('pomo-work').value) || 25;
+  pomoState.breakMin = parseInt(document.getElementById('pomo-break').value) || 5;
+  if(!pomoState.running){
+    pomoState.timeLeft = pomoState.workMin * 60;
+    pomoState.totalTime = pomoState.workMin * 60;
+    pomoState.isBreak = false;
+    savePomoState();
+    pomoDisplay();
+  }
+}
+
+function pomoDisplay(){
+  const min = Math.floor(pomoState.timeLeft / 60);
+  const sec = pomoState.timeLeft % 60;
+  const display = document.getElementById('pomo-display');
+  const label = document.getElementById('pomo-label');
+  const fill = document.getElementById('pomo-progress-fill');
+  const sessionsEl = document.getElementById('pomo-sessions');
+  
+  display.textContent = String(min).padStart(2,'0') + ':' + String(sec).padStart(2,'0');
+  display.className = 'pomo-display' + (pomoState.isBreak ? ' break' : '');
+  label.textContent = pomoState.isBreak ? 'Перерыв' : 'Фокус';
+  
+  const pct = pomoState.totalTime ? (pomoState.timeLeft / pomoState.totalTime * 100) : 0;
+  fill.style.width = pct + '%';
+  fill.style.background = pomoState.isBreak ? 'var(--green)' : 'var(--accent)';
+  
+  // Update sessions dots
+  let dots = '';
+  for(let i = 0; i < 4; i++){
+    dots += `<span class="dot${i < pomoState.sessions % 4 ? ' done' : ''}"></span>`;
+  }
+  sessionsEl.innerHTML = dots;
+  
+  // Update page title
+  if(pomoState.running){
+    document.title = `${String(min).padStart(2,'0')}:${String(sec).padStart(2,'0')} - Кайдзен`;
+  }
+}
+
+function pomoStart(){
+  if(pomoState.running) return;
+  pomoState.running = true;
+  document.getElementById('pomo-start').classList.add('active');
+  
+  pomoState.interval = setInterval(() => {
+    pomoState.timeLeft--;
+    savePomoState();
+    
+    if(pomoState.timeLeft <= 0){
+      pomoTick();
+    }
+    
+    pomoDisplay();
+  }, 1000);
+}
+
+function pomoPause(){
+  pomoState.running = false;
+  clearInterval(pomoState.interval);
+  document.getElementById('pomo-start').classList.remove('active');
+  document.title = 'Кайдзен Планировщик';
+  savePomoState();
+}
+
+function pomoReset(){
+  pomoPause();
+  pomoState.timeLeft = pomoState.isBreak ? pomoState.breakMin * 60 : pomoState.workMin * 60;
+  pomoState.totalTime = pomoState.timeLeft;
+  savePomoState();
+  pomoDisplay();
+}
+
+function pomoSkip(){
+  pomoPause();
+  pomoTick();
+  pomoDisplay();
+}
+
+function pomoTick(){
+  // Play sound
+  try {
+    const sound = document.getElementById('pomo-sound');
+    sound.currentTime = 0;
+    sound.play().catch(()=>{});
+  } catch(e){}
+  
+  // Show notification
+  if(Notification.permission === 'granted'){
+    const msg = pomoState.isBreak ? 'Перерыв окончен! Время работать.' : 'Помодоро завершено! Отдыхайте.';
+    new Notification('Кайдзен Таймер', {body: msg, icon: 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><text y=".9em" font-size="90">🍅</text></svg>'});
+  }
+  
+  if(pomoState.isBreak){
+    // Break done → work
+    pomoState.isBreak = false;
+    pomoState.timeLeft = pomoState.workMin * 60;
+    pomoState.totalTime = pomoState.workMin * 60;
+  } else {
+    // Work done → break
+    pomoState.sessions++;
+    pomoState.isBreak = true;
+    pomoState.timeLeft = pomoState.breakMin * 60;
+    pomoState.totalTime = pomoState.breakMin * 60;
+  }
+  savePomoState();
+}
+
+function togglePomodoro(){
+  const el = document.getElementById('pomodoro');
+  el.classList.toggle('collapsed');
+  localStorage.setItem('kaizen_pomo_collapsed', el.classList.contains('collapsed'));
+}
+
+function loadPomoCollapsed(){
+  if(localStorage.getItem('kaizen_pomo_collapsed') === 'true'){
+    document.getElementById('pomodoro').classList.add('collapsed');
+  }
+}
+
+// Request notification permission
+if('Notification' in window && Notification.permission === 'default'){
+  Notification.requestPermission();
+}
+
+// Load saved pomodoro state
+loadPomoState();
+loadPomoCollapsed();
+
+// ==================== PDF EXPORT ====================
+function exportPDF(){
+  // Create a print-friendly version
+  const printWindow = window.open('', '_blank');
+  
+  let html = `<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Кайдзен - Экспорт</title>
+  <style>
+    body{font-family:'Segoe UI',sans-serif;max-width:800px;margin:0 auto;padding:20px;color:#222}
+    h1{font-size:24px;border-bottom:2px solid #6c8cff;padding-bottom:8px}
+    h2{font-size:18px;color:#6c8cff;margin-top:24px}
+    h3{font-size:15px;color:#555;margin-top:16px}
+    .card{border:1px solid #ddd;border-radius:6px;padding:10px;margin:6px 0}
+    .tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:10px;margin-right:4px}
+    .tag-dev{background:#f0d06033;color:#b8960a}
+    .tag-family{background:#a07ce833;color:#7c5cb8}
+    .tag-biz{background:#5ca0e833;color:#3a7cc0}
+    .tag-community{background:#e87ca033;color:#c05070}
+    .tag-hobby{background:#f0a05033;color:#c07020}
+    table{width:100%;border-collapse:collapse;margin:12px 0}
+    th,td{border:1px solid #ddd;padding:8px;text-align:left;font-size:13px}
+    th{background:#f5f5f5}
+    .stat{display:inline-block;text-align:center;padding:12px;margin:4px;border:1px solid #ddd;border-radius:8px;min-width:100px}
+    .stat .val{font-size:24px;font-weight:700;color:#6c8cff}
+    .stat .lbl{font-size:11px;color:#888}
+    @media print{body{padding:10px}}
+  </style></head><body>`;
+  
+  html += `<h1>Кайдзен Планировщик</h1>`;
+  html += `<p style="color:#888">Дата экспорта: ${new Date().toLocaleDateString('ru-RU')} ${new Date().toLocaleTimeString('ru-RU')}</p>`;
+  
+  // Mission
+  if(data.mission){
+    html += `<div style="background:#f0f4ff;padding:12px;border-radius:8px;margin:12px 0"><strong>Миссия:</strong> ${esc(data.mission)}</div>`;
+  }
+  
+  // Stats
+  let totalKanban = 0, kanbanDone = 0;
+  Object.values(data.kanban.months).forEach(m => { totalKanban += m.length; kanbanDone += m.filter(c => c.status === 'done').length; });
+  
+  html += `<div style="margin:16px 0">
+    <div class="stat"><div class="val">${data.brainCards.length}</div><div class="lbl">В голове</div></div>
+    <div class="stat"><div class="val">${totalKanban}</div><div class="lbl">В Канбан</div></div>
+    <div class="stat"><div class="val">${kanbanDone}</div><div class="lbl">Выполнено</div></div>
+    <div class="stat"><div class="val">${data.habits.length}</div><div class="lbl">Привычек</div></div>
+  </div>`;
+  
+  // Kanban by month
+  html += `<h2>Канбан-доска</h2>`;
+  const monthNames = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+  const kanbanCols = {todo:'Нужно сделать',planned:'Запланировано','process-me':'В процессе','process-other':'У другого',today:'Сегодня',done:'Сделано'};
+  
+  Object.entries(data.kanban.months).sort().forEach(([month, cards]) => {
+    if(!cards.length) return;
+    const [y, m] = month.split('-');
+    html += `<h3>${monthNames[parseInt(m)]} ${y}</h3>`;
+    html += `<table><tr><th>Задача</th><th>Категория</th><th>Статус</th></tr>`;
+    cards.forEach(c => {
+      html += `<tr><td>${esc(c.text)}</td><td><span class="tag tag-${c.dir}">${DIR_NAMES[c.dir]||''}</span></td><td>${kanbanCols[c.status]||c.status}</td></tr>`;
+    });
+    html += `</table>`;
+  });
+  
+  // Habits
+  if(data.habits.length){
+    html += `<h2>Привычки</h2><table><tr><th>Привычка</th><th>Текущий стрик</th><th>Создана</th></tr>`;
+    data.habits.forEach(h => {
+      html += `<tr><td>${esc(h.name)}</td><td>${getStreak(h.id)} дн.</td><td>${new Date(h.created).toLocaleDateString('ru-RU')}</td></tr>`;
+    });
+    html += `</table>`;
+  }
+  
+  // Brain dump
+  if(data.brainCards.length){
+    html += `<h2>В голове (${data.brainCards.length})</h2><ul>`;
+    data.brainCards.forEach(c => { html += `<li>${esc(c.text)}</li>`; });
+    html += `</ul>`;
+  }
+  
+  // Filter items
+  const filterItems = [
+    ...(data.filterWant||[]).map(c => ({...c, cat:'Хочу'})),
+    ...(data.filterShould||[]).map(c => ({...c, cat:'Должен'})),
+    ...(data.filterHappy||[]).map(c => ({...c, cat:'Счастливее'})),
+  ];
+  if(filterItems.length){
+    html += `<h2>Фильтры</h2><table><tr><th>Задача</th><th>Категория</th></tr>`;
+    filterItems.forEach(c => {
+      html += `<tr><td>${esc(c.text)}</td><td>${c.cat}</td></tr>`;
+    });
+    html += `</table>`;
+  }
+  
+  html += `</body></html>`;
+  
+  printWindow.document.write(html);
+  printWindow.document.close();
+  
+  setTimeout(() => {
+    printWindow.print();
+  }, 500);
+}
+</script>
+</body>
+</html>
